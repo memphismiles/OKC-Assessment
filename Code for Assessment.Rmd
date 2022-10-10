@@ -1,0 +1,119 @@
+---
+title: "OKC Internship Assessment"
+author: "Memphis Lau"
+date: '2022-10-10'
+output: pdf_document
+---
+
+Here I will read in the data:
+```{r}
+shots <- read.csv("shots_data.csv")
+```
+
+
+## Adding New Column Data
+This function tells me whether a shot is a 2-pointer or 3-pointer based on the x and y positions, which I can use to create a new column in my table that shows whether each shot is a 2-pointer or not.
+```{r}
+two_pointer <- function(x, y){
+  output <- logical(length(x))
+  for(i in 1:length(x)){
+    if (y[i] <= 7.8){
+      if (x[i] <= 22){
+        output[i] <- TRUE
+      }
+    } else {
+      if ((x[i]^2 + y[i]^2) <= (23.5)^2){
+        output[i] <- TRUE
+      }
+    }
+  }
+  output
+}
+```
+
+```{r}
+shots$two_point_shot <- as.numeric(two_pointer(shots$x, shots$y))
+head(shots, n = 5)
+```
+
+
+Now I add a column that says whether the shot was a corner three pointer or not.
+```{r}
+shots$corner_three <- as.numeric((shots$two_point_shot == 0) & (shots$y <= 7.8))
+head(shots, n = 5)
+```
+
+## Separating by Team
+```{r}
+team_a <- shots[shots$team == "Team A", ]
+team_b <- shots[shots$team == "Team B", ]
+```
+
+## Shot distribution
+
+### Team A
+```{r}
+total_shots <- nrow(team_a)
+
+# Two point shots
+sum(team_a$two_point_shot) / total_shots
+
+# Non-Corner Three
+(total_shots - sum(team_a$two_point_shot) - sum(team_a$corner_three)) / total_shots
+
+# Corner Three
+sum(team_a$corner_three) / total_shots
+```
+
+So 72.5% of Team A's shots were two-pointers, 24.3% were non-corner three pointers, and 3.2% were corner threes.
+
+### Team B
+```{r}
+total_shots <- nrow(team_b)
+
+# Two point shots
+sum(team_b$two_point_shot) / total_shots
+
+# Non-Corner Three
+(total_shots - sum(team_b$two_point_shot) - sum(team_b$corner_three)) / total_shots
+
+# Corner Three
+sum(team_b$corner_three) / total_shots
+```
+69.2% of Team B's shots were two-pointers, 27.7% were non corner three pointers, and 3.1% were corner threes.
+
+## Effective Field Goal Per Zone
+### Team A
+```{r}
+# 2 pointers
+team_a_2PT <- team_a[team_a$two_point_shot == 1, ]
+sum(team_a_2PT$fgmade) / nrow(team_a_2PT)
+
+# Non Corner Three
+team_a_NC3 <- team_a[team_a$two_point_shot == 0 & team_a$corner_three == 0, ]
+1.5 * sum(team_a_NC3$fgmade) / nrow(team_a_NC3)
+
+# Corner Three
+team_a_C3 <- team_a[team_a$corner_three == 1, ]
+1.5 * sum(team_a_C3$fgmade) / nrow(team_a_C3)
+```
+For Team A, the efg for 2PT, NC3, and C3 are 50.2%, 46.3%, and 33.3%, respectively.
+
+
+### Team B
+```{r}
+# 2 pointers
+team_b_2PT <- team_b[team_b$two_point_shot == 1, ]
+sum(team_b_2PT$fgmade) / nrow(team_b_2PT)
+
+# Non Corner Three
+team_b_NC3 <- team_b[team_b$two_point_shot == 0 & team_b$corner_three == 0, ]
+1.5 * sum(team_b_NC3$fgmade) / nrow(team_b_NC3)
+
+# Corner Three
+team_b_C3 <- team_b[team_b$corner_three == 1, ]
+1.5 * sum(team_b_C3$fgmade) / nrow(team_b_C3)
+```
+For Team B, the efg for 2PT, NC3, and C3 are 43.9%, 50.8%, and 64.3%, respectively.
+
+Though the samples are very small, it seems the data tells us that Team B should attempt more corner threes. The data also aligns well in that Team B makes threes at a higher percentage than Team A, and thus shoots more threes proportionally.
